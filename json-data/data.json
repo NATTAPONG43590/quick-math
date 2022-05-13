@@ -1,0 +1,14 @@
+{
+    "quiz": [
+        {
+            "question": "What is the capital of India?",
+            "options": [
+                "New Delhi",
+                "Mumbai",
+                "Chennai",
+                "Kolkata"
+            ],
+            "answer": "New Delhi"
+        }
+    ]
+}
