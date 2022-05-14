@@ -19,7 +19,7 @@ terms = np.array(["+","-","x","/"]) #initialize terms
 select_operation = np.array([1,1,0,0])
 final = 10
 ranges = np.array([[1,9],[1,9],[1,5],[2,10]]) #add sub mul div
-terms_range = np.array([2,30])
+terms_range = np.array([2,6])
 answer = None
 
 #================================= function for game =======================================
