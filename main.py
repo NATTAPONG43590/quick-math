@@ -21,7 +21,7 @@ final = 10
 ranges = np.array([[1,9],[1,9],[1,5],[2,10]]) #add sub mul div
 terms_range = np.array([2,6])
 answer = None
-
+Question_with_par = ""
 #================================= function for game =======================================
 class Quiz:
     
