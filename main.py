@@ -2,12 +2,12 @@
 from ast import While, operator
 from multiprocessing import Event
 import random
-import time
 from tkinter.messagebox import QUESTION
 import numpy as np
 import tkinter
 import turtle
 import os
+import ast
 
 #================================ initial variable setup ==================================
 score = 0 #initialize score
@@ -15,12 +15,16 @@ initial_time = 60
 btn_click = 1
 time_left = initial_time #initialize time per question
 additional_time = 2 #time added per correct answer
-terms = np.array(["+","-","x","/"]) #initialize terms
+terms = np.array(["+","-","*","/"]) #initialize terms
 select_operation = np.array([1,1,0,0])
 final = 10
 ranges = np.array([[1,9],[1,9],[1,5],[2,10]]) #add sub mul div
-terms_range = np.array([2,30])
+terms_range = np.array([2,3])
 answer = None
+question_with_parenthesis = ""
+endless = True
+harder = 1
+time_temp = time_per_question = 10
 
 #================================= function for game =======================================
 class Quiz:
@@ -41,23 +45,31 @@ class Quiz:
                 
 q = Quiz()       
 def game_start(event):
-    if time_left == initial_time:
+    global terms_range
+    if time_left == initial_time and not endless:
         countdown()
+    elif time_per_question == time_temp and endless:
+        time_label.config(text="endless" + "  mode")
+        time_per_question_countdown()
+    if endless and score % harder == 0 and score != 0:
+        terms_range += 1
     next_question()
 def next_question():
     global score
     global q
-    global time_left
+    global time_left,time_per_question
+    global question
     if time_left > 0:
         e.focus_set()
         usr_input = e.get()
         try:
             usr_input = int(usr_input)
-            if check_answer(q,usr_input):
+            if check_answer(question,usr_input):
                 score += 1
                 time_left += additional_time
                 errlebel.config(text="")
                 correct_label.config(text="Correct!",fg="green")
+                time_per_question = time_temp
             else:
                 correct_label.config(text="Wrong! the answer is " + str(int(answer)),fg="red")
             e.delete(0,tkinter.END)
@@ -72,6 +84,7 @@ def next_question():
                 errlebel.config(text="Please enter a number")
             e.delete(0,tkinter.END)
     q = Quiz()
+    print(q.operands,q.operators)
     question = "" 
     if q.operands.size == 0:
         label.config(text="please select at least one operation",font=("Arial",15))
@@ -82,24 +95,16 @@ def next_question():
         else:
             question += terms[int(q.operators[i-1])] + " "
             question += str(int(q.operands[i])) + " "
+    question = add_parenthesis(question)
     label.config(text=question)
     score_label.config(text="Score: " + str(score))
-    if score == final:
+    if score == final and not endless:
         tkinter.Tk.destroy(root)
         firework()
 
-def check_answer(quiz,ans):
+def check_answer(expression,ans):
     global answer
-    answer = quiz.operands[0]
-    for i in range(1,len(quiz.operands)):
-        if(quiz.operators[i-1] == 0):
-            answer += quiz.operands[i]
-        elif(quiz.operators[i-1] == 1):
-            answer -= quiz.operands[i]
-        elif(quiz.operators[i-1] == 2):
-            answer *= quiz.operands[i]
-        elif(quiz.operators[i-1] == 3):
-            answer /= quiz.operands[i]
+    answer = eval(expression)
     if(int(ans) == int(answer)):
         return True
     return False  
@@ -111,6 +116,15 @@ def countdown():
         time_label.config(text="time left  " + str(time_left) + "  s")
         time_label.after(1000, countdown)
     if time_left == 0:
+        tkinter.Tk.destroy(root)
+def time_per_question_countdown():
+    global time_per_question
+    if time_per_question > 0:
+        time_per_question -= 1
+        time_per_ques.config(text="time per question  " + str(time_per_question) + "  s")
+        time_per_ques.after(1000, time_per_question_countdown)
+    if time_per_question == 0:
+        print("finale score: " + str(score))
         tkinter.Tk.destroy(root)
 def change_operation(num):
     select_operation[num] = 1
@@ -156,6 +170,60 @@ def firework():
         t.forward(size)
         t.backward(size)
         t.left(10)
+def add_parenthesis(expression):
+    global question_with_parenthesis 
+    def recurse(node):
+        global question_with_parenthesis 
+        if isinstance(node, ast.BinOp):
+            if isinstance(node.op, ast.Mult) or isinstance(node.op, ast.Div):
+                question_with_parenthesis  += '('
+            recurse(node.left)
+            recurse(node.op)
+            recurse(node.right)
+            if isinstance(node.op, ast.Mult) or isinstance(node.op, ast.Div):
+                question_with_parenthesis += ')'
+        elif isinstance(node, ast.Add):
+            question_with_parenthesis += '+'
+        elif isinstance(node, ast.Sub):
+             question_with_parenthesis += '-'
+        elif isinstance(node, ast.Mult):
+             question_with_parenthesis += '*'
+        
+        elif isinstance(node, ast.Div):
+             question_with_parenthesis += '/'
+        elif isinstance(node, ast.Num):
+             question_with_parenthesis += str(node.n)
+        else:
+            for child in ast.iter_child_nodes(node):
+                recurse(child)
+        
+    
+
+
+    def search_expr(node):
+        returns = []
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.Expr):
+                return child
+            returns.append(search_expr(child))
+        for ret in returns:
+            if isinstance(ret, ast.Expr):
+                return ret
+        return None
+    
+
+    express = expression
+
+    a = ast.parse(express)
+
+    expr = search_expr(a)
+    if expr is not None:
+        recurse(expr)
+    temp = question_with_parenthesis
+    print(question_with_parenthesis)
+    question_with_parenthesis = ""
+    return temp
+
 def change_operation():
     global select_operation
     select_operation = np.array([addv.get(),subv.get(),multiv.get(),dividev.get()]) 
@@ -181,10 +249,13 @@ score_label = tkinter.Label(root, text = "Press enter to start",
 score_label.pack()
   
 # add a time left label
-time_label = tkinter.Label(root, text = "Time left: " + str(time_left), font = ('Helvetica', 12))
-                
+time_label = tkinter.Label(root, text = "Time left: " + str(time_left) + "s",font = ('Helvetica', 12))
+       
 time_label.pack()
-  
+time_per_ques = tkinter.Label(root, text = "Time left: " + str(time_per_question) + "s", font = ('Helvetica', 12))
+if endless:
+    time_label.config(text="timeless mode: enabled")   
+    time_per_ques.pack()
 # add a label for displaying the colours
 label = tkinter.Label(root, font = ('Helvetica', 25), justify="center")
 label.pack()
