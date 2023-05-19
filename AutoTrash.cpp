@@ -1,7 +1,7 @@
 #include <Servo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-
+//ประกาศตัวแปร
 const int trig1 = 13;
 const int echo1 = 12;
 const int trig2 = 8;
@@ -11,15 +11,15 @@ const int buzzerPin = 11;
 const int SW_modePin = 7;
 const int SW_manualPin = 6;
 
-const int DISTANCE_THRESHOLD_OUTSIDE = 35;
-const int DISTANCE_THRESHOLD_INSIDE = 30;
+const int DISTANCE_THRESHOLD_OUTSIDE = 35; //กำหนดระยะห่างด้านนอก
+const int DISTANCE_THRESHOLD_INSIDE = 30; //ระยะภายใน
 
 unsigned short distance1;
 unsigned short distance2;
 
 Servo myservo;
 LiquidCrystal_I2C lcd(0x20, 16, 2);
-
+//------------------------------
 void setup()
 {
   Serial.begin(9600);
@@ -41,21 +41,13 @@ void loop()
   
   if (digitalRead(SW_modePin)) // Automode
   {
-    readUltrasonicDistance(trig2, echo2, distance2);
-    Serial.print("Distance Inside: ");
-    Serial.print(distance2);
-    Serial.println(" cm");
+    readUltrasonicDistance(trig2, echo2, distance2);//เรียกตัวด้านใน
     
     if (distance2 > DISTANCE_THRESHOLD_INSIDE)
     {
       lcd.clear();
       lcd.print("Not Full");
-      
-      readUltrasonicDistance(trig1, echo1, distance1);
-      Serial.print("Distance Outside: ");
-      Serial.print(distance1);
-      Serial.println(" cm");
-      
+      readUltrasonicDistance(trig1, echo1, distance1);//เช็คค่าข้างนอก
       if (distance1 < DISTANCE_THRESHOLD_OUTSIDE)
       {
         tone(buzzerPin, 250, 500);
@@ -98,7 +90,7 @@ void loop()
   }
 }
 
-unsigned short readUltrasonicDistance(int triggerPin, int echoPin)
+unsigned short readUltrasonicDistance(int triggerPin, int echoPin)//ฟังค์ชั่นใช้งาน ultrasonic โดยtrigger pin เป็นตัวกำหนดว่าจะเอาตัวไหน
 {
   digitalWrite(triggerPin, LOW);
   delayMicroseconds(5);
@@ -109,10 +101,10 @@ unsigned short readUltrasonicDistance(int triggerPin, int echoPin)
   unsigned long duration = pulseIn(echoPin, HIGH);
   unsigned short distance = (duration / 2) / 29.1;
   
-  return distance;
+  return distance; // ส่งค่า ระยะออกเป็นผลของฟังชั่น
 }
 
-void openclosetrash()
+void openclosetrash()//ฟังชั่นเปิดปิดฝาถัง
 {
   for (int pos = 0; pos <= 120; pos += 10)
   {
