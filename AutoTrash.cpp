@@ -1,7 +1,9 @@
 #include <Servo.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
-//ประกาศตัวแปร
+#include <Adafruit_LiquidCrystal.h>
+
+//เซ็ตตัวแปร
 const int trig1 = 13;
 const int echo1 = 12;
 const int trig2 = 8;
@@ -10,20 +12,20 @@ const int servoPin = 10;
 const int buzzerPin = 11;
 const int SW_modePin = 7;
 const int SW_manualPin = 6;
-
 const int DISTANCE_THRESHOLD_OUTSIDE = 35; //กำหนดระยะห่างด้านนอก
 const int DISTANCE_THRESHOLD_INSIDE = 30; //ระยะภายใน
 
 unsigned short distance1;
 unsigned short distance2;
-
+//-------------------------------------
 Servo myservo;
-LiquidCrystal_I2C lcd(0x20, 16, 2);
-//------------------------------
+LiquidCrystal_I2C lcd(0x20,16,2);
+
 void setup()
 {
   Serial.begin(9600);
-  lcd.begin(16, 2);
+  lcd.init();
+  lcd.setCursor(0,0);
   lcd.backlight();
   myservo.attach(servoPin);
   pinMode(echo1, INPUT);
@@ -38,16 +40,17 @@ void setup()
 void loop()
 {
   myservo.write(0);
-  
+
   if (digitalRead(SW_modePin)) // Automode
   {
-    readUltrasonicDistance(trig2, echo2, distance2);//เรียกตัวด้านใน
-    
+    distance2 = readUltrasonicDistance(trig2, echo2); //เรียกใช้ ultra ด้านใน และเก็บใน distance2
+
     if (distance2 > DISTANCE_THRESHOLD_INSIDE)
     {
       lcd.clear();
       lcd.print("Not Full");
-      readUltrasonicDistance(trig1, echo1, distance1);//เช็คค่าข้างนอก
+      distance1 = readUltrasonicDistance(trig1, echo1); //เรียกใช้ ultra ด้านนอก และเก็บใน distance1
+
       if (distance1 < DISTANCE_THRESHOLD_OUTSIDE)
       {
         tone(buzzerPin, 250, 500);
@@ -65,11 +68,7 @@ void loop()
   }
   else // Manual mode
   {
-    readUltrasonicDistance(trig2, echo2, distance2);
-    Serial.print("Distance Inside: ");
-    Serial.print(distance2);
-    Serial.println(" cm");
-    
+    distance2 = readUltrasonicDistance(trig2, echo2); //เรียกใช้ ultra ด้านใน และเก็บใน distance2
     if (distance2 > DISTANCE_THRESHOLD_INSIDE)
     {
       lcd.clear();
@@ -82,38 +81,40 @@ void loop()
       lcd.print("Full");
       delay(5000);
     }
-    
+
     while (!digitalRead(SW_manualPin))
     {
       myservo.write(120);
     }
   }
+
+  delay(1000);
 }
 
-unsigned short readUltrasonicDistance(int triggerPin, int echoPin)//ฟังค์ชั่นใช้งาน ultrasonic โดยtrigger pin เป็นตัวกำหนดว่าจะเอาตัวไหน
+short readUltrasonicDistance(int triggerPin, int echoPin) //ฟังค์ชั่นใช้งาน ultrasonic โดย trigger pin เป็นตัวกำหนดว่าจะเอาตัวไหน
 {
   digitalWrite(triggerPin, LOW);
   delayMicroseconds(5);
   digitalWrite(triggerPin, HIGH);
-  delayMicroseconds(5);
+  delayMicroseconds(10);
   digitalWrite(triggerPin, LOW);
 
   unsigned long duration = pulseIn(echoPin, HIGH);
   unsigned short distance = (duration / 2) / 29.1;
-  
-  return distance; // ส่งค่า ระยะออกเป็นผลของฟังชั่น
+
+  return distance;
 }
 
-void openclosetrash()//ฟังชั่นเปิดปิดฝาถัง
+void openclosetrash() //ฟังชั่นเปิดปิดฝาถัง
 {
   for (int pos = 0; pos <= 120; pos += 10)
   {
     myservo.write(pos);
     delay(20);
   }
-  
+
   delay(5000);
-  
+
   for (int pos = 120; pos >= 0; pos -= 10)
   {
     myservo.write(pos);
